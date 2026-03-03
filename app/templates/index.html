@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Personal Spam Agent</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet" />
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg: #0e1117;
+            --card: #161b27;
+            --border: #1e2636;
+            --accent: #4f8ef7;
+            --green: #22c55e;
+            --red: #ef4444;
+            --yellow: #f59e0b;
+            --text: #e2e8f0;
+            --muted: #64748b;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            padding: 24px;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--accent);
+            letter-spacing: -0.5px;
+        }
+
+        .subtitle {
+            color: var(--muted);
+            font-size: 0.9rem;
+            margin-top: 4px;
+            margin-bottom: 32px;
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--muted);
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        textarea {
+            width: 100%;
+            background: #0e1117;
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 14px;
+            font-family: 'Inter', monospace;
+            font-size: 0.85rem;
+            resize: vertical;
+            min-height: 200px;
+            outline: none;
+            transition: border 0.2s;
+        }
+
+        textarea:focus {
+            border-color: var(--accent);
+        }
+
+        button {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 28px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        button:hover {
+            opacity: 0.85;
+        }
+
+        button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        /* Result card */
+        #result-box {
+            display: none;
+        }
+
+        .verdict {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .verdict.QUARANTINE {
+            color: var(--red);
+        }
+
+        .verdict.DELIVER {
+            color: var(--green);
+        }
+
+        .verdict.UNCERTAIN {
+            color: var(--yellow);
+        }
+
+        .verdict.MODEL_NOT_LOADED {
+            color: var(--muted);
+        }
+
+        /* Probability bar */
+        .prob-wrap {
+            margin: 16px 0;
+        }
+
+        .prob-label {
+            font-size: 0.78rem;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+
+        .prob-bar {
+            height: 10px;
+            border-radius: 99px;
+            background: var(--border);
+            overflow: hidden;
+        }
+
+        .prob-fill {
+            height: 100%;
+            border-radius: 99px;
+            transition: width 0.6s ease;
+            background: linear-gradient(90deg, var(--green), var(--yellow), var(--red));
+        }
+
+        /* Indicators table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+            font-size: 0.82rem;
+        }
+
+        th {
+            text-align: left;
+            color: var(--muted);
+            padding: 6px 10px;
+            border-bottom: 1px solid var(--border);
+            font-weight: 500;
+        }
+
+        td {
+            padding: 6px 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 99px;
+            font-size: 0.72rem;
+            font-weight: 600;
+        }
+
+        .badge.risk {
+            background: #3b1a1a;
+            color: var(--red);
+        }
+
+        .badge.ok {
+            background: #1a3b22;
+            color: var(--green);
+        }
+
+        /* Explanation */
+        .explanation {
+            font-style: italic;
+            color: var(--muted);
+            font-size: 0.88rem;
+            line-height: 1.6;
+            margin-top: 12px;
+        }
+
+        /* Quick links */
+        .links {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .links a {
+            color: var(--accent);
+            font-size: 0.85rem;
+            text-decoration: none;
+            padding: 6px 14px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+
+        .links a:hover {
+            background: var(--border);
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Personal Spam Agent</h1>
+    <p class="subtitle">Local TF-IDF + LinearSVC · Gmail IMAP · No cloud required</p>
+
+    <div class="links">
+        <a href="/docs" target="_blank">📖 Swagger Docs</a>
+        <a href="/audit" target="_blank">📋 Audit Log (JSON)</a>
+        <a href="/health" target="_blank">❤️ Health</a>
+    </div>
+    <br />
+
+    <div class="card">
+        <label>PASTE RAW EMAIL TEXT (headers + body)</label>
+        <textarea id="raw-email"
+            placeholder="From: sender@example.com&#10;Subject: Test email&#10;&#10;Body text here…"></textarea>
+        <br /><br />
+        <button id="btn-triage" onclick="triage()">Triage Email →</button>
+    </div>
+
+    <div class="card" id="result-box">
+        <div class="verdict" id="verdict-text"></div>
+        <div class="prob-wrap">
+            <div class="prob-label">Spam probability · <span id="prob-pct"></span></div>
+            <div class="prob-bar">
+                <div class="prob-fill" id="prob-fill" style="width:0%"></div>
+            </div>
+        </div>
+        <p class="explanation" id="explanation"></p>
+
+        <h3 style="margin-top:20px; font-size:0.9rem; color:var(--muted);">Risk Indicators</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Indicator</th>
+                    <th>Value</th>
+                    <th>Risk</th>
+                </tr>
+            </thead>
+            <tbody id="indicator-rows"></tbody>
+        </table>
+
+        <!-- Feedback -->
+        <div style="margin-top:20px; padding-top:16px; border-top:1px solid var(--border)">
+            <label>Submit feedback (correct the classification)</label>
+            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                <select id="corrected-label"
+                    style="background:var(--bg); color:var(--text); border:1px solid var(--border); padding:8px 14px; border-radius:8px; font-size:0.85rem;">
+                    <option value="SPAM">Mark as SPAM</option>
+                    <option value="HAM">Mark as HAM</option>
+                </select>
+                <input id="reason-input" type="text" placeholder="Reason (optional)"
+                    style="flex:1; background:var(--bg); color:var(--text); border:1px solid var(--border); padding:8px 14px; border-radius:8px; font-size:0.85rem;" />
+                <button onclick="submitFeedback()">Submit Feedback</button>
+            </div>
+            <p id="feedback-status" style="font-size:0.8rem; margin-top:8px; color:var(--green);"></p>
+        </div>
+    </div>
+
+    <script>
+        let _currentEmailId = null;
+
+        async function triage() {
+            const raw = document.getElementById("raw-email").value.trim();
+            if (!raw) return alert("Paste an email first.");
+            const btn = document.getElementById("btn-triage");
+            btn.disabled = true; btn.textContent = "Classifying…";
+
+            try {
+                const res = await fetch("/triage", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email_raw: raw }) });
+                const data = await res.json();
+                _currentEmailId = data.email_id;
+                renderResult(data);
+            } catch (e) { alert("Error: " + e); }
+            finally { btn.disabled = false; btn.textContent = "Triage Email →"; }
+        }
+
+        function renderResult(data) {
+            document.getElementById("result-box").style.display = "block";
+
+            const verdict = document.getElementById("verdict-text");
+            const icons = { QUARANTINE: "⛔", DELIVER: "✅", UNCERTAIN: "⚠️", MODEL_NOT_LOADED: "🔴" };
+            verdict.textContent = `${icons[data.action] || ""} ${data.action}`;
+            verdict.className = `verdict ${data.action}`;
+
+            const pct = Math.round(data.spam_probability * 100);
+            document.getElementById("prob-pct").textContent = pct + "%";
+            document.getElementById("prob-fill").style.width = pct + "%";
+            document.getElementById("explanation").textContent = data.explanation;
+
+            const tbody = document.getElementById("indicator-rows");
+            tbody.innerHTML = "";
+            const riskKeys = ["reply_to_mismatch", "url_shortener_detected", "ip_url_detected", "subject_upper_ratio", "urgency_score"];
+            for (const [k, v] of Object.entries(data.indicators || {})) {
+                if (["shortener_urls", "suspicious_tlds", "urgency_phrases", "ip_urls"].includes(k)) continue;
+                const isRisk = riskKeys.includes(k) && (v === true || (typeof v === "number" && v > 0));
+                tbody.innerHTML += `<tr><td>${k.replaceAll("_", " ")}</td><td>${JSON.stringify(v)}</td>
+      <td><span class="badge ${isRisk ? "risk" : "ok"}">${isRisk ? "⚠ risk" : "✓ ok"}</span></td></tr>`;
+            }
+        }
+
+        async function submitFeedback() {
+            if (!_currentEmailId) return alert("Triage an email first.");
+            const label = document.getElementById("corrected-label").value;
+            const reason = document.getElementById("reason-input").value;
+            const res = await fetch("/feedback", {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email_id: _currentEmailId, corrected_label: label, reason })
+            });
+            const data = await res.json();
+            document.getElementById("feedback-status").textContent = "✓ " + data.status;
+        }
+    </script>
+</body>
+
+</html>

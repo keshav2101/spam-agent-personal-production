@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+pydantic
+pydantic-settings
+beautifulsoup4
+httpx
+python-dotenv
+PyPDF2
+scikit-learn
+joblib
+jinja2
+python-multipart
+publicsuffix2
+psycopg2-binary
