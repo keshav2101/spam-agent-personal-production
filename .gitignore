@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Environment / secrets — NEVER commit these
+.env
+*.env
+
+# Databases
+*.db
+*.sqlite3
+spam_personal.db
+
+# ML model files (large — pull with git-lfs or download script)
+model_registry/*.pkl
+data/spam/
+data/ham/
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temp files
+*.tmp
+/tmp/

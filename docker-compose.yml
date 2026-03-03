@@ -1,0 +1,24 @@
+version: "3.9"
+
+# Personal Gmail Spam Agent — Docker Compose
+# Runs the FastAPI app only. SQLite is stored in a local volume.
+# IMAP watcher runs as a second process via a separate override if needed.
+
+services:
+  spam-agent-personal:
+    build: .
+    container_name: spam_personal
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./spam_personal.db:/app/spam_personal.db
+      - ./model_registry:/app/model_registry
+      - ./data:/app/data
+    healthcheck:
+      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
