@@ -47,6 +47,12 @@ Paste any raw email (including headers) and get a live classification in under 5
 
 ---
 
+## 🏗️ Architecture
+
+![Architecture Diagram](docs/screenshots/architecture.png)
+
+---
+
 ## 🚀 Features
 
 | Feature | Details |
