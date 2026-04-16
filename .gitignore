@@ -23,8 +23,8 @@ env/
 *.sqlite3
 spam_personal.db
 
-# ML model files (large — pull with git-lfs or download script)
-model_registry/*.pkl
+# ML model files — committed for Vercel deployment (7.1MB is within limits)
+# model_registry/*.pkl  ← uncomment to exclude if using git-lfs
 data/spam/
 data/ham/
 

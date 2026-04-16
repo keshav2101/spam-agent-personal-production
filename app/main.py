@@ -3,10 +3,12 @@ app/main.py — FastAPI application for personal spam agent
 """
 import uuid
 import logging
-from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks, Request, UploadFile, File
+from typing import List
+from fastapi import FastAPI, Depends, HTTPException, Request, UploadFile, File
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from app.db.session  import get_db, engine
 from app.db.models   import AuditLog, FeedbackLog, RetrainQueue
@@ -39,7 +41,9 @@ app = FastAPI(
     version="2.0.0",
 )
 
-templates = Jinja2Templates(directory="app/templates")
+import os as _os
+_HERE = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
+templates = Jinja2Templates(directory=_os.path.join(_HERE, "app", "templates"))
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -120,7 +124,7 @@ def _run_triage(email_raw: str, db: Session) -> TriageResponse:
 @app.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request):
     """Interactive web UI dashboard."""
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(request, "index.html")
 
 
 @app.get("/health", response_model=HealthResponse)
@@ -201,29 +205,24 @@ def submit_feedback(request: FeedbackRequest, db: Session = Depends(get_db)):
     )
 
 
-@app.get("/audit/{email_id}", response_model=AuditRecord)
-def get_audit(email_id: str, db: Session = Depends(get_db)):
-    """Retrieves the full audit record for a classified email."""
-    record = get_audit_by_email_id(db, email_id)
-    if not record:
-        raise HTTPException(status_code=404, detail="Audit record not found.")
-    return AuditRecord(
-        email_id=record.email_id,
-        message_id=record.message_id,
-        sender=record.sender,
-        subject=record.subject,
-        timestamp=record.timestamp.isoformat(),
-        spam_probability=record.spam_probability,
-        action=record.action,
-        model_version=record.model_version,
-        indicators=record.indicators,
-        explanation=record.explanation,
-        header_hash=record.header_hash,
-        body_hash=record.body_hash,
+@app.get("/audit/stats")
+def audit_stats(db: Session = Depends(get_db)):
+    """Returns aggregate counts per action for dashboard stats."""
+    rows = (
+        db.query(AuditLog.action, func.count(AuditLog.id).label("count"))
+        .group_by(AuditLog.action)
+        .all()
     )
+    counts = {r.action: r.count for r in rows}
+    return {
+        "total":       sum(counts.values()),
+        "quarantine":  counts.get("QUARANTINE", 0),
+        "deliver":     counts.get("DELIVER", 0),
+        "uncertain":   counts.get("UNCERTAIN", 0),
+    }
 
 
-@app.get("/audit", response_model=list[AuditRecord])
+@app.get("/audit", response_model=List[AuditRecord])
 def list_audits(limit: int = 50, db: Session = Depends(get_db)):
     """Lists the most recent audit records."""
     records = list_recent_audits(db, limit=limit)
@@ -244,3 +243,25 @@ def list_audits(limit: int = 50, db: Session = Depends(get_db)):
         )
         for r in records
     ]
+
+
+@app.get("/audit/{email_id}", response_model=AuditRecord)
+def get_audit(email_id: str, db: Session = Depends(get_db)):
+    """Retrieves the full audit record for a classified email."""
+    record = get_audit_by_email_id(db, email_id)
+    if not record:
+        raise HTTPException(status_code=404, detail="Audit record not found.")
+    return AuditRecord(
+        email_id=record.email_id,
+        message_id=record.message_id,
+        sender=record.sender,
+        subject=record.subject,
+        timestamp=record.timestamp.isoformat(),
+        spam_probability=record.spam_probability,
+        action=record.action,
+        model_version=record.model_version,
+        indicators=record.indicators,
+        explanation=record.explanation,
+        header_hash=record.header_hash,
+        body_hash=record.body_hash,
+    )

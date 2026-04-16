@@ -1,348 +1,1403 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Personal Spam Agent</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
-        rel="stylesheet" />
-    <style>
-        *,
-        *::before,
-        *::after {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Spam Agent — Personal Gmail Shield</title>
+  <meta name="description" content="Local AI-powered email spam detection dashboard. Triage emails, view audit logs, and monitor your personal spam classifier."/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    /* ════════════════════════════════════════════
+       DESIGN TOKENS
+    ════════════════════════════════════════════ */
+    :root {
+      --bg:         #07090f;
+      --bg2:        #0c1018;
+      --surface:    rgba(255,255,255,0.035);
+      --surface-h:  rgba(255,255,255,0.065);
+      --border:     rgba(255,255,255,0.08);
+      --border-h:   rgba(255,255,255,0.15);
 
-        :root {
-            --bg: #0e1117;
-            --card: #161b27;
-            --border: #1e2636;
-            --accent: #4f8ef7;
-            --green: #22c55e;
-            --red: #ef4444;
-            --yellow: #f59e0b;
-            --text: #e2e8f0;
-            --muted: #64748b;
-        }
+      --indigo:     #6366f1;
+      --indigo-dim: rgba(99,102,241,0.15);
+      --indigo-glow:rgba(99,102,241,0.35);
 
-        body {
-            background: var(--bg);
-            color: var(--text);
-            font-family: 'Inter', sans-serif;
-            min-height: 100vh;
-            padding: 24px;
-        }
+      --emerald:    #10b981;
+      --emerald-dim:rgba(16,185,129,0.15);
+      --rose:       #f43f5e;
+      --rose-dim:   rgba(244,63,94,0.15);
+      --amber:      #f59e0b;
+      --amber-dim:  rgba(245,158,11,0.15);
+      --slate:      #64748b;
 
-        h1 {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: var(--accent);
-            letter-spacing: -0.5px;
-        }
+      --text:       #e2e8f0;
+      --text-muted: #94a3b8;
+      --text-dim:   #475569;
 
-        .subtitle {
-            color: var(--muted);
-            font-size: 0.9rem;
-            margin-top: 4px;
-            margin-bottom: 32px;
-        }
+      --sidebar-w:  240px;
+      --radius:     14px;
+      --radius-sm:  8px;
+    }
 
-        .card {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 24px;
-        }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        label {
-            font-size: 0.85rem;
-            font-weight: 500;
-            color: var(--muted);
-            display: block;
-            margin-bottom: 8px;
-        }
+    html { scroll-behavior: smooth; }
 
-        textarea {
-            width: 100%;
-            background: #0e1117;
-            color: var(--text);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 14px;
-            font-family: 'Inter', monospace;
-            font-size: 0.85rem;
-            resize: vertical;
-            min-height: 200px;
-            outline: none;
-            transition: border 0.2s;
-        }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 14px;
+      min-height: 100vh;
+      display: flex;
+      overflow-x: hidden;
+    }
 
-        textarea:focus {
-            border-color: var(--accent);
-        }
+    /* ════════════════════════════════════════════
+       SIDEBAR
+    ════════════════════════════════════════════ */
+    #sidebar {
+      width: var(--sidebar-w);
+      min-height: 100vh;
+      background: var(--bg2);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      left: 0; top: 0;
+      z-index: 100;
+      padding: 24px 16px;
+      gap: 8px;
+    }
 
-        button {
-            background: var(--accent);
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            padding: 12px 28px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: opacity 0.2s;
-        }
+    .sidebar-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 4px 20px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 8px;
+    }
 
-        button:hover {
-            opacity: 0.85;
-        }
+    .logo-icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--indigo), #818cf8);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      box-shadow: 0 0 20px var(--indigo-glow);
+      flex-shrink: 0;
+    }
 
-        button:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-        }
+    .logo-text { font-size: 13px; font-weight: 700; color: var(--text); line-height: 1.2; }
+    .logo-sub  { font-size: 10px; color: var(--text-muted); font-weight: 400; }
 
-        /* Result card */
-        #result-box {
-            display: none;
-        }
+    .nav-section {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 4px 8px;
+      margin-top: 8px;
+    }
 
-        .verdict {
-            font-size: 1.3rem;
-            font-weight: 700;
-            margin-bottom: 4px;
-        }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      color: var(--text-muted);
+      font-weight: 500;
+      font-size: 13px;
+      transition: all 0.18s;
+      border: 1px solid transparent;
+      text-decoration: none;
+    }
 
-        .verdict.QUARANTINE {
-            color: var(--red);
-        }
+    .nav-item:hover {
+      background: var(--surface);
+      color: var(--text);
+      border-color: var(--border);
+    }
 
-        .verdict.DELIVER {
-            color: var(--green);
-        }
+    .nav-item.active {
+      background: var(--indigo-dim);
+      color: #a5b4fc;
+      border-color: rgba(99,102,241,0.3);
+    }
 
-        .verdict.UNCERTAIN {
-            color: var(--yellow);
-        }
+    .nav-icon { font-size: 16px; flex-shrink: 0; }
 
-        .verdict.MODEL_NOT_LOADED {
-            color: var(--muted);
-        }
+    /* Stats strip */
+    .sidebar-stats {
+      margin-top: auto;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
 
-        /* Probability bar */
-        .prob-wrap {
-            margin: 16px 0;
-        }
+    .stat-chip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+    }
 
-        .prob-label {
-            font-size: 0.78rem;
-            color: var(--muted);
-            margin-bottom: 6px;
-        }
+    .stat-chip .sc-label { color: var(--text-muted); }
+    .stat-chip .sc-val   { font-weight: 700; font-size: 13px; }
+    .sc-val.q { color: var(--rose); }
+    .sc-val.d { color: var(--emerald); }
+    .sc-val.u { color: var(--amber); }
 
-        .prob-bar {
-            height: 10px;
-            border-radius: 99px;
-            background: var(--border);
-            overflow: hidden;
-        }
+    /* ════════════════════════════════════════════
+       MAIN CONTENT
+    ════════════════════════════════════════════ */
+    #main {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      padding: 32px;
+      min-height: 100vh;
+    }
 
-        .prob-fill {
-            height: 100%;
-            border-radius: 99px;
-            transition: width 0.6s ease;
-            background: linear-gradient(90deg, var(--green), var(--yellow), var(--red));
-        }
+    .page-header {
+      margin-bottom: 32px;
+      animation: fadeUp 0.4s ease both;
+    }
 
-        /* Indicators table */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 12px;
-            font-size: 0.82rem;
-        }
+    .page-title {
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #c7d2fe, #818cf8, var(--indigo));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
 
-        th {
-            text-align: left;
-            color: var(--muted);
-            padding: 6px 10px;
-            border-bottom: 1px solid var(--border);
-            font-weight: 500;
-        }
+    .page-subtitle {
+      color: var(--text-muted);
+      font-size: 13px;
+      margin-top: 4px;
+    }
 
-        td {
-            padding: 6px 10px;
-            border-bottom: 1px solid var(--border);
-        }
+    /* ── VIEW SWITCHER ── */
+    .view { display: none; animation: fadeUp 0.35s ease both; }
+    .view.active { display: block; }
 
-        .badge {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 99px;
-            font-size: 0.72rem;
-            font-weight: 600;
-        }
+    /* ── GLASS CARD ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      backdrop-filter: blur(12px);
+      transition: border-color 0.2s;
+    }
 
-        .badge.risk {
-            background: #3b1a1a;
-            color: var(--red);
-        }
+    .card:hover { border-color: var(--border-h); }
 
-        .badge.ok {
-            background: #1a3b22;
-            color: var(--green);
-        }
+    .card-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 16px;
+    }
 
-        /* Explanation */
-        .explanation {
-            font-style: italic;
-            color: var(--muted);
-            font-size: 0.88rem;
-            line-height: 1.6;
-            margin-top: 12px;
-        }
+    /* ════════════════════════════════════════════
+       TRIAGE VIEW
+    ════════════════════════════════════════════ */
+    #view-triage { display: block; }
 
-        /* Quick links */
-        .links {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
+    .input-tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 16px;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 4px;
+      width: fit-content;
+    }
 
-        .links a {
-            color: var(--accent);
-            font-size: 0.85rem;
-            text-decoration: none;
-            padding: 6px 14px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            transition: background 0.2s;
-        }
+    .input-tab {
+      padding: 6px 18px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+      transition: all 0.18s;
+      border: none;
+      background: none;
+    }
 
-        .links a:hover {
-            background: var(--border);
-        }
-    </style>
+    .input-tab.active {
+      background: var(--indigo);
+      color: #fff;
+      box-shadow: 0 2px 12px var(--indigo-glow);
+    }
+
+    textarea#raw-email {
+      width: 100%;
+      background: rgba(0,0,0,0.4);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 16px;
+      font-family: 'Inter', monospace;
+      font-size: 13px;
+      resize: vertical;
+      min-height: 220px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      line-height: 1.6;
+    }
+
+    textarea#raw-email:focus {
+      border-color: var(--indigo);
+      box-shadow: 0 0 0 3px var(--indigo-dim);
+    }
+
+    /* Drop zone */
+    #drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 48px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: none;
+      position: relative;
+    }
+
+    #drop-zone.visible { display: block; }
+    #drop-zone.drag-over {
+      border-color: var(--indigo);
+      background: var(--indigo-dim);
+    }
+
+    .dz-icon    { font-size: 40px; margin-bottom: 12px; }
+    .dz-label   { font-size: 15px; font-weight: 600; color: var(--text); }
+    .dz-sub     { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+    .dz-formats { font-size: 11px; color: var(--text-dim); margin-top: 8px; font-family: monospace; }
+
+    #file-input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+
+    .file-selected {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      background: var(--indigo-dim);
+      border: 1px solid rgba(99,102,241,0.3);
+      border-radius: var(--radius-sm);
+      margin-top: 12px;
+      font-size: 13px;
+      color: #a5b4fc;
+      display: none;
+    }
+
+    /* Triage button */
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, var(--indigo), #818cf8);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 12px 28px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 16px;
+      transition: all 0.2s;
+      box-shadow: 0 4px 20px var(--indigo-glow);
+    }
+
+    .btn-primary:hover   { transform: translateY(-1px); box-shadow: 0 6px 28px var(--indigo-glow); }
+    .btn-primary:active  { transform: translateY(0); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .btn-secondary {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--surface);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 9px 18px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.18s;
+    }
+    .btn-secondary:hover { background: var(--surface-h); color: var(--text); border-color: var(--border-h); }
+
+    /* ── SPINNER ── */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: inline-block;
+    }
+
+    /* ── RESULT CARD ── */
+    #result-section { display: none; margin-top: 28px; }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 20px;
+    }
+
+    /* Circular gauge */
+    .gauge-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      backdrop-filter: blur(12px);
+    }
+
+    .gauge-wrap {
+      position: relative;
+      width: 160px;
+      height: 160px;
+    }
+
+    .gauge-svg { transform: rotate(-90deg); }
+
+    .gauge-track { fill: none; stroke: rgba(255,255,255,0.06); stroke-width: 12; }
+    .gauge-fill  {
+      fill: none;
+      stroke-width: 12;
+      stroke-linecap: round;
+      stroke-dasharray: 440;
+      stroke-dashoffset: 440;
+      transition: stroke-dashoffset 1s cubic-bezier(0.4,0,0.2,1), stroke 0.3s;
+    }
+
+    .gauge-text {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .gauge-pct {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      line-height: 1;
+    }
+
+    .gauge-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      font-weight: 500;
+      margin-top: 2px;
+    }
+
+    /* Verdict badge */
+    .verdict-badge {
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      width: 100%;
+    }
+
+    .verdict-icon { font-size: 32px; }
+    .verdict-action {
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+    }
+    .verdict-action.QUARANTINE { color: var(--rose); }
+    .verdict-action.DELIVER    { color: var(--emerald); }
+    .verdict-action.UNCERTAIN  { color: var(--amber); }
+    .verdict-action.MODEL_NOT_LOADED { color: var(--slate); }
+
+    .verdict-sub { font-size: 11px; color: var(--text-muted); text-align: center; line-height: 1.5; }
+
+    /* Result detail pane */
+    .result-detail {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      backdrop-filter: blur(12px);
+    }
+
+    .detail-section-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 10px;
+    }
+
+    /* Explanation */
+    .explanation-text {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.7;
+      font-style: italic;
+      background: rgba(0,0,0,0.2);
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
+      border-left: 3px solid var(--indigo);
+    }
+
+    /* Feature pills */
+    .pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+
+    .pill {
+      padding: 4px 12px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 600;
+      border: 1px solid;
+    }
+
+    .pill.risk { background: var(--rose-dim); color: #fda4af; border-color: rgba(244,63,94,0.3); }
+    .pill.ok   { background: var(--emerald-dim); color: #6ee7b7; border-color: rgba(16,185,129,0.3); }
+    .pill.info { background: var(--indigo-dim); color: #a5b4fc; border-color: rgba(99,102,241,0.3); }
+
+    /* Indicators table */
+    .ind-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    .ind-table th {
+      text-align: left;
+      color: var(--text-dim);
+      padding: 6px 10px;
+      border-bottom: 1px solid var(--border);
+      font-weight: 500;
+    }
+
+    .ind-table td {
+      padding: 7px 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      color: var(--text-muted);
+    }
+
+    .ind-table tr:last-child td { border-bottom: none; }
+
+    .badge-risk { color: var(--rose); font-weight: 600; }
+    .badge-ok   { color: var(--emerald); }
+
+    /* Email meta */
+    .meta-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .meta-item {
+      background: rgba(0,0,0,0.25);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+    }
+
+    .meta-item label { font-size: 10px; color: var(--text-dim); font-weight: 600; text-transform: uppercase; display: block; margin-bottom: 3px; }
+    .meta-item span  { font-size: 12px; color: var(--text); word-break: break-all; }
+
+    /* Feedback section */
+    .feedback-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    select, input[type="text"] {
+      background: rgba(0,0,0,0.4);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 9px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    select:focus, input[type="text"]:focus { border-color: var(--indigo); }
+
+    #feedback-msg { font-size: 12px; margin-top: 6px; color: var(--emerald); }
+
+    /* email_id copy chip */
+    .email-id-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 11px;
+      color: var(--text-dim);
+      font-family: monospace;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      padding: 4px 12px;
+      cursor: pointer;
+      transition: all 0.18s;
+      margin-top: 4px;
+    }
+    .email-id-chip:hover { color: var(--text); border-color: var(--border-h); }
+
+    /* ════════════════════════════════════════════
+       AUDIT VIEW
+    ════════════════════════════════════════════ */
+    .audit-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .audit-table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
+
+    .audit-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .audit-table thead {
+      background: rgba(0,0,0,0.3);
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    .audit-table th {
+      text-align: left;
+      padding: 12px 16px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    .audit-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      color: var(--text-muted);
+      vertical-align: middle;
+    }
+
+    .audit-table tbody tr {
+      transition: background 0.15s;
+      cursor: pointer;
+    }
+
+    .audit-table tbody tr:hover { background: var(--surface-h); }
+    .audit-table tbody tr:last-child td { border-bottom: none; }
+
+    /* Action badges */
+    .action-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 700;
+      border: 1px solid;
+    }
+
+    .action-badge.QUARANTINE { background: var(--rose-dim); color: #fda4af; border-color: rgba(244,63,94,0.3); }
+    .action-badge.DELIVER    { background: var(--emerald-dim); color: #6ee7b7; border-color: rgba(16,185,129,0.3); }
+    .action-badge.UNCERTAIN  { background: var(--amber-dim); color: #fcd34d; border-color: rgba(245,158,11,0.3); }
+
+    /* Mini prob bar */
+    .mini-bar {
+      height: 5px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 99px;
+      overflow: hidden;
+      width: 80px;
+      margin-top: 4px;
+    }
+
+    .mini-fill { height: 100%; border-radius: 99px; }
+
+    /* Expanded audit row */
+    .audit-expand {
+      background: rgba(0,0,0,0.3);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      display: none;
+    }
+
+    .audit-expand.open { display: table-row; }
+
+    .audit-expand-inner {
+      padding: 16px;
+      font-size: 12px;
+      color: var(--text-muted);
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+    }
+
+    .ae-block label { font-size: 10px; color: var(--text-dim); font-weight: 600; text-transform: uppercase; display: block; margin-bottom: 3px; }
+    .ae-block span  { color: var(--text); font-size: 12px; word-break: break-all; }
+
+    #audit-empty {
+      text-align: center;
+      padding: 60px;
+      color: var(--text-dim);
+      font-size: 14px;
+      display: none;
+    }
+
+    /* ════════════════════════════════════════════
+       HEALTH VIEW
+    ════════════════════════════════════════════ */
+    .health-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+    }
+
+    .health-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      backdrop-filter: blur(12px);
+      transition: border-color 0.2s;
+    }
+
+    .health-card:hover { border-color: var(--border-h); }
+
+    .hc-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .hc-value {
+      font-size: 22px;
+      font-weight: 800;
+    }
+
+    .hc-sub { font-size: 12px; color: var(--text-dim); }
+
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 6px;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.5; transform: scale(0.85); }
+    }
+
+    .status-dot.ok   { background: var(--emerald); animation: pulse 2s ease-in-out infinite; }
+    .status-dot.err  { background: var(--rose); animation: pulse 1.2s ease-in-out infinite; }
+    .status-dot.warn { background: var(--amber); animation: pulse 2s ease-in-out infinite; }
+
+    .health-poll-note {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-top: 16px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Raw JSON block */
+    .json-block {
+      background: rgba(0,0,0,0.4);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 16px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      color: #94a3b8;
+      white-space: pre-wrap;
+      max-height: 300px;
+      overflow-y: auto;
+      margin-top: 16px;
+    }
+
+    /* ════════════════════════════════════════════
+       ANIMATIONS
+    ════════════════════════════════════════════ */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+
+    .animate-in { animation: fadeUp 0.4s ease both; }
+
+    /* ════════════════════════════════════════════
+       SCROLLBAR
+    ════════════════════════════════════════════ */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 99px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+    /* ════════════════════════════════════════════
+       RESPONSIVE
+    ════════════════════════════════════════════ */
+    @media (max-width: 900px) {
+      :root { --sidebar-w: 0px; }
+      #sidebar { display: none; }
+      #main { margin-left: 0; padding: 20px 16px; }
+      .result-grid { grid-template-columns: 1fr; }
+      .health-grid { grid-template-columns: 1fr 1fr; }
+      .meta-grid   { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 600px) {
+      .health-grid { grid-template-columns: 1fr; }
+      .audit-expand-inner { grid-template-columns: 1fr; }
+    }
+
+    /* ════════════════════════════════════════════
+       UTILITY
+    ════════════════════════════════════════════ */
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 16px 0;
+    }
+
+    .truncate {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 180px;
+    }
+
+    .text-sm { font-size: 12px; }
+    .text-muted { color: var(--text-muted); }
+    .mt-4 { margin-top: 16px; }
+    .flex { display: flex; }
+    .items-center { align-items: center; }
+    .gap-2 { gap: 8px; }
+  </style>
 </head>
-
 <body>
 
-    <h1>Personal Spam Agent</h1>
-    <p class="subtitle">Local TF-IDF + LinearSVC · Gmail IMAP · No cloud required</p>
-
-    <div class="links">
-        <a href="/docs" target="_blank">📖 Swagger Docs</a>
-        <a href="/audit" target="_blank">📋 Audit Log (JSON)</a>
-        <a href="/health" target="_blank">❤️ Health</a>
+<!-- ════════════════════ SIDEBAR ════════════════════ -->
+<nav id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">🛡️</div>
+    <div>
+      <div class="logo-text">Spam Agent</div>
+      <div class="logo-sub">Personal Gmail Shield</div>
     </div>
-    <br />
+  </div>
 
-    <div class="card">
-        <label>PASTE RAW EMAIL TEXT (headers + body)</label>
-        <textarea id="raw-email"
-            placeholder="From: sender@example.com&#10;Subject: Test email&#10;&#10;Body text here…"></textarea>
-        <br /><br />
-        <button id="btn-triage" onclick="triage()">Triage Email →</button>
+  <div class="nav-section">Navigation</div>
+  <div class="nav-item active" id="nav-triage" onclick="showView('triage')">
+    <span class="nav-icon">⚡</span> Triage Email
+  </div>
+  <div class="nav-item" id="nav-audit" onclick="showView('audit')">
+    <span class="nav-icon">📋</span> Audit Log
+  </div>
+  <div class="nav-item" id="nav-health" onclick="showView('health')">
+    <span class="nav-icon">❤️</span> Health
+  </div>
+  <a class="nav-item" href="/docs" target="_blank">
+    <span class="nav-icon">📖</span> Swagger Docs
+  </a>
+
+  <div class="sidebar-stats">
+    <div class="nav-section" style="margin-top:0; padding-left:0;">Stats</div>
+    <div class="stat-chip">
+      <span class="sc-label">⛔ Quarantined</span>
+      <span class="sc-val q" id="stat-q">—</span>
+    </div>
+    <div class="stat-chip">
+      <span class="sc-label">✅ Delivered</span>
+      <span class="sc-val d" id="stat-d">—</span>
+    </div>
+    <div class="stat-chip">
+      <span class="sc-label">⚠️ Uncertain</span>
+      <span class="sc-val u" id="stat-u">—</span>
+    </div>
+  </div>
+</nav>
+
+<!-- ════════════════════ MAIN ════════════════════ -->
+<main id="main">
+
+  <!-- ── TRIAGE VIEW ── -->
+  <div class="view active" id="view-triage">
+    <div class="page-header">
+      <div class="page-title">Triage Email</div>
+      <div class="page-subtitle">Classify any email instantly using the local TF-IDF + LinearSVC model</div>
     </div>
 
-    <div class="card" id="result-box">
-        <div class="verdict" id="verdict-text"></div>
-        <div class="prob-wrap">
-            <div class="prob-label">Spam probability · <span id="prob-pct"></span></div>
-            <div class="prob-bar">
-                <div class="prob-fill" id="prob-fill" style="width:0%"></div>
-            </div>
+    <div class="card animate-in">
+      <!-- Input mode tabs -->
+      <div class="input-tabs">
+        <button class="input-tab active" id="tab-paste" onclick="switchInput('paste')">📝 Paste Text</button>
+        <button class="input-tab" id="tab-upload" onclick="switchInput('upload')">📁 Upload File</button>
+      </div>
+
+      <!-- Paste mode -->
+      <div id="paste-mode">
+        <div class="card-title">Raw Email (headers + body)</div>
+        <textarea id="raw-email" placeholder="From: sender@example.com&#10;Subject: Claim your prize NOW!&#10;Reply-To: scammer@shady.xyz&#10;&#10;Congratulations! You have won $1,000,000. Click here to claim immediately..."></textarea>
+      </div>
+
+      <!-- Upload mode -->
+      <div id="upload-mode" style="display:none;">
+        <div class="card-title">Upload Email File</div>
+        <div id="drop-zone" class="visible" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+          <input type="file" id="file-input" accept=".eml,.txt,.pdf,.json" onchange="onFileSelect(event)"/>
+          <div class="dz-icon">📨</div>
+          <div class="dz-label">Drop your email file here</div>
+          <div class="dz-sub">or click to browse</div>
+          <div class="dz-formats">.eml &nbsp;·&nbsp; .txt &nbsp;·&nbsp; .pdf &nbsp;·&nbsp; .json</div>
         </div>
-        <p class="explanation" id="explanation"></p>
+        <div class="file-selected" id="file-selected">
+          <span>📎</span>
+          <span id="file-name"></span>
+        </div>
+      </div>
 
-        <h3 style="margin-top:20px; font-size:0.9rem; color:var(--muted);">Risk Indicators</h3>
-        <table>
-            <thead>
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        <button class="btn-primary" id="btn-triage" onclick="runTriage()">
+          <span id="btn-icon">⚡</span>
+          <span id="btn-label">Classify Email</span>
+        </button>
+        <button class="btn-secondary" onclick="clearAll()">✕ Clear</button>
+      </div>
+    </div>
+
+    <!-- Result section -->
+    <div id="result-section">
+      <div class="result-grid animate-in">
+
+        <!-- Gauge card -->
+        <div class="gauge-card">
+          <div class="gauge-wrap">
+            <svg class="gauge-svg" width="160" height="160" viewBox="0 0 160 160">
+              <circle class="gauge-track" cx="80" cy="80" r="70"/>
+              <circle class="gauge-fill" id="gauge-fill" cx="80" cy="80" r="70"/>
+            </svg>
+            <div class="gauge-text">
+              <span class="gauge-pct" id="gauge-pct">0%</span>
+              <span class="gauge-label">spam score</span>
+            </div>
+          </div>
+
+          <div class="verdict-badge">
+            <div class="verdict-icon" id="verdict-icon">—</div>
+            <div class="verdict-action" id="verdict-action">—</div>
+            <div class="verdict-sub" id="verdict-sub"></div>
+          </div>
+
+          <div class="email-id-chip" id="email-id-chip" onclick="copyEmailId()" title="Click to copy email_id">
+            🔑 <span id="email-id-label">—</span>
+          </div>
+        </div>
+
+        <!-- Detail pane -->
+        <div class="result-detail">
+
+          <!-- Explanation -->
+          <div>
+            <div class="detail-section-title">AI Explanation</div>
+            <div class="explanation-text" id="explanation">—</div>
+          </div>
+
+          <!-- Feature flags -->
+          <div>
+            <div class="detail-section-title">Risk Signals</div>
+            <div class="pills" id="feature-pills">—</div>
+          </div>
+
+          <hr class="divider"/>
+
+          <!-- Risk indicators -->
+          <div>
+            <div class="detail-section-title">Risk Indicators</div>
+            <table class="ind-table">
+              <thead>
                 <tr>
-                    <th>Indicator</th>
-                    <th>Value</th>
-                    <th>Risk</th>
+                  <th>Indicator</th>
+                  <th>Value</th>
+                  <th>Risk</th>
                 </tr>
-            </thead>
-            <tbody id="indicator-rows"></tbody>
-        </table>
+              </thead>
+              <tbody id="indicator-rows"></tbody>
+            </table>
+          </div>
 
-        <!-- Feedback -->
-        <div style="margin-top:20px; padding-top:16px; border-top:1px solid var(--border)">
-            <label>Submit feedback (correct the classification)</label>
-            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-                <select id="corrected-label"
-                    style="background:var(--bg); color:var(--text); border:1px solid var(--border); padding:8px 14px; border-radius:8px; font-size:0.85rem;">
-                    <option value="SPAM">Mark as SPAM</option>
-                    <option value="HAM">Mark as HAM</option>
-                </select>
-                <input id="reason-input" type="text" placeholder="Reason (optional)"
-                    style="flex:1; background:var(--bg); color:var(--text); border:1px solid var(--border); padding:8px 14px; border-radius:8px; font-size:0.85rem;" />
-                <button onclick="submitFeedback()">Submit Feedback</button>
+          <!-- Parsed metadata -->
+          <div>
+            <div class="detail-section-title">Parsed Metadata</div>
+            <div class="meta-grid" id="meta-grid"></div>
+          </div>
+
+          <hr class="divider"/>
+
+          <!-- Feedback -->
+          <div>
+            <div class="detail-section-title">Submit Feedback</div>
+            <div class="feedback-row">
+              <select id="corrected-label">
+                <option value="SPAM">Mark as SPAM</option>
+                <option value="HAM">Mark as HAM</option>
+              </select>
+              <input id="reason-input" type="text" placeholder="Reason (optional)" style="flex:1; min-width:120px;"/>
+              <button class="btn-secondary" onclick="submitFeedback()">Submit</button>
             </div>
-            <p id="feedback-status" style="font-size:0.8rem; margin-top:8px; color:var(--green);"></p>
+            <div id="feedback-msg"></div>
+          </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── AUDIT LOG VIEW ── -->
+  <div class="view" id="view-audit">
+    <div class="page-header">
+      <div class="page-title">Audit Log</div>
+      <div class="page-subtitle">History of all triaged emails — most recent first</div>
     </div>
 
-    <script>
-        let _currentEmailId = null;
+    <div class="audit-toolbar">
+      <span class="text-muted text-sm" id="audit-count"></span>
+      <button class="btn-secondary" id="btn-refresh" onclick="loadAudit()">
+        <span id="refresh-icon">↻</span> Refresh
+      </button>
+    </div>
 
-        async function triage() {
-            const raw = document.getElementById("raw-email").value.trim();
-            if (!raw) return alert("Paste an email first.");
-            const btn = document.getElementById("btn-triage");
-            btn.disabled = true; btn.textContent = "Classifying…";
+    <div class="audit-table-wrap">
+      <table class="audit-table" id="audit-table">
+        <thead>
+          <tr>
+            <th>Timestamp</th>
+            <th>Sender</th>
+            <th>Subject</th>
+            <th>Action</th>
+            <th>Probability</th>
+            <th>Model</th>
+          </tr>
+        </thead>
+        <tbody id="audit-tbody"></tbody>
+      </table>
+      <div id="audit-empty">No audit records yet. Triage an email first.</div>
+    </div>
+  </div>
 
-            try {
-                const res = await fetch("/triage", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email_raw: raw }) });
-                const data = await res.json();
-                _currentEmailId = data.email_id;
-                renderResult(data);
-            } catch (e) { alert("Error: " + e); }
-            finally { btn.disabled = false; btn.textContent = "Triage Email →"; }
-        }
+  <!-- ── HEALTH VIEW ── -->
+  <div class="view" id="view-health">
+    <div class="page-header">
+      <div class="page-title">System Health</div>
+      <div class="page-subtitle">Live status of the ML model and database</div>
+    </div>
 
-        function renderResult(data) {
-            document.getElementById("result-box").style.display = "block";
+    <div class="health-grid" id="health-grid">
+      <div class="health-card">
+        <div class="hc-label">Status</div>
+        <div class="hc-value" id="hc-status">—</div>
+        <div class="hc-sub">API server</div>
+      </div>
+      <div class="health-card">
+        <div class="hc-label">Model</div>
+        <div class="hc-value" id="hc-model">—</div>
+        <div class="hc-sub" id="hc-model-ver">version not loaded</div>
+      </div>
+      <div class="health-card">
+        <div class="hc-label">Database</div>
+        <div class="hc-value" id="hc-db">—</div>
+        <div class="hc-sub">SQLite connection</div>
+      </div>
+    </div>
 
-            const verdict = document.getElementById("verdict-text");
-            const icons = { QUARANTINE: "⛔", DELIVER: "✅", UNCERTAIN: "⚠️", MODEL_NOT_LOADED: "🔴" };
-            verdict.textContent = `${icons[data.action] || ""} ${data.action}`;
-            verdict.className = `verdict ${data.action}`;
+    <div class="health-poll-note">
+      <span class="status-dot ok"></span>
+      Auto-refreshing every 30 seconds · <span id="last-poll">never</span>
+    </div>
 
-            const pct = Math.round(data.spam_probability * 100);
-            document.getElementById("prob-pct").textContent = pct + "%";
-            document.getElementById("prob-fill").style.width = pct + "%";
-            document.getElementById("explanation").textContent = data.explanation;
+    <div class="json-block" id="health-raw"></div>
+  </div>
 
-            const tbody = document.getElementById("indicator-rows");
-            tbody.innerHTML = "";
-            const riskKeys = ["reply_to_mismatch", "url_shortener_detected", "ip_url_detected", "subject_upper_ratio", "urgency_score"];
-            for (const [k, v] of Object.entries(data.indicators || {})) {
-                if (["shortener_urls", "suspicious_tlds", "urgency_phrases", "ip_urls"].includes(k)) continue;
-                const isRisk = riskKeys.includes(k) && (v === true || (typeof v === "number" && v > 0));
-                tbody.innerHTML += `<tr><td>${k.replaceAll("_", " ")}</td><td>${JSON.stringify(v)}</td>
-      <td><span class="badge ${isRisk ? "risk" : "ok"}">${isRisk ? "⚠ risk" : "✓ ok"}</span></td></tr>`;
-            }
-        }
+</main>
 
-        async function submitFeedback() {
-            if (!_currentEmailId) return alert("Triage an email first.");
-            const label = document.getElementById("corrected-label").value;
-            const reason = document.getElementById("reason-input").value;
-            const res = await fetch("/feedback", {
-                method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email_id: _currentEmailId, corrected_label: label, reason })
-            });
-            const data = await res.json();
-            document.getElementById("feedback-status").textContent = "✓ " + data.status;
-        }
-    </script>
+<!-- ════════════════════ SCRIPT ════════════════════ -->
+<script>
+  /* ─── State ──────────────────────────────────── */
+  let _emailId   = null;
+  let _inputMode = 'paste';
+  let _file      = null;
+  let _healthTimer = null;
+
+  const RISK_KEYS = new Set([
+    'reply_to_mismatch','url_shortener_detected','ip_url_detected',
+    'subject_upper_ratio','urgency_score'
+  ]);
+
+  const SKIP_KEYS = new Set([
+    'shortener_urls','suspicious_tlds','urgency_phrases','ip_urls'
+  ]);
+
+  /* ─── View routing ───────────────────────────── */
+  function showView(name) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+    document.getElementById('view-' + name).classList.add('active');
+    document.getElementById('nav-' + name)?.classList.add('active');
+
+    if (name === 'audit')  loadAudit();
+    if (name === 'health') { loadHealth(); startHealthPoll(); }
+    else stopHealthPoll();
+  }
+
+  /* ─── Input mode tabs ────────────────────────── */
+  function switchInput(mode) {
+    _inputMode = mode;
+    document.getElementById('paste-mode').style.display  = mode === 'paste'  ? '' : 'none';
+    document.getElementById('upload-mode').style.display = mode === 'upload' ? '' : 'none';
+    document.getElementById('tab-paste').classList.toggle('active', mode === 'paste');
+    document.getElementById('tab-upload').classList.toggle('active', mode === 'upload');
+  }
+
+  /* ─── Drag-and-drop ──────────────────────────── */
+  function onDragOver(e) {
+    e.preventDefault();
+    document.getElementById('drop-zone').classList.add('drag-over');
+  }
+  function onDragLeave(e) {
+    document.getElementById('drop-zone').classList.remove('drag-over');
+  }
+  function onDrop(e) {
+    e.preventDefault();
+    document.getElementById('drop-zone').classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) setFile(file);
+  }
+  function onFileSelect(e) {
+    const file = e.target.files[0];
+    if (file) setFile(file);
+  }
+  function setFile(file) {
+    _file = file;
+    const el = document.getElementById('file-selected');
+    el.style.display = 'flex';
+    document.getElementById('file-name').textContent = file.name + ' (' + formatBytes(file.size) + ')';
+  }
+  function formatBytes(b) {
+    return b > 1048576 ? (b/1048576).toFixed(1)+'MB' : b > 1024 ? (b/1024).toFixed(1)+'KB' : b+'B';
+  }
+
+  /* ─── Clear ─────────────────────────────────── */
+  function clearAll() {
+    document.getElementById('raw-email').value = '';
+    _file = null;
+    _emailId = null;
+    document.getElementById('file-selected').style.display = 'none';
+    document.getElementById('result-section').style.display = 'none';
+    document.getElementById('file-input').value = '';
+    document.getElementById('feedback-msg').textContent = '';
+  }
+
+  /* ─── Triage ─────────────────────────────────── */
+  async function runTriage() {
+    const btn   = document.getElementById('btn-triage');
+    const label = document.getElementById('btn-label');
+    const icon  = document.getElementById('btn-icon');
+
+    btn.disabled = true;
+    icon.innerHTML = '<span class="spinner"></span>';
+    label.textContent = 'Classifying…';
+
+    try {
+      let data;
+      if (_inputMode === 'paste') {
+        const raw = document.getElementById('raw-email').value.trim();
+        if (!raw) { alert('Please paste an email first.'); return; }
+        const res = await fetch('/triage', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({email_raw: raw})
+        });
+        data = await res.json();
+      } else {
+        if (!_file) { alert('Please select a file first.'); return; }
+        const fd = new FormData();
+        fd.append('file', _file);
+        const res = await fetch('/ui/triage_file', { method: 'POST', body: fd });
+        data = await res.json();
+      }
+      _emailId = data.email_id;
+      renderResult(data);
+      loadStats();
+    } catch(e) {
+      alert('Error: ' + e.message);
+    } finally {
+      btn.disabled = false;
+      icon.textContent = '⚡';
+      label.textContent = 'Classify Email';
+    }
+  }
+
+  /* ─── Render result ──────────────────────────── */
+  function renderResult(data) {
+    const rs = document.getElementById('result-section');
+    rs.style.display = 'block';
+
+    const pct = Math.round(data.spam_probability * 100);
+
+    /* Gauge */
+    const circumference = 2 * Math.PI * 70; // 439.8
+    const fill = document.getElementById('gauge-fill');
+    fill.style.strokeDasharray  = circumference;
+    fill.style.strokeDashoffset = circumference - (pct / 100) * circumference;
+    fill.style.stroke = pct >= 90 ? 'var(--rose)' : pct <= 10 ? 'var(--emerald)' : 'var(--amber)';
+
+    document.getElementById('gauge-pct').textContent = pct + '%';
+    document.getElementById('gauge-pct').style.color = fill.style.stroke;
+
+    /* Verdict */
+    const icons = { QUARANTINE:'⛔', DELIVER:'✅', UNCERTAIN:'⚠️', MODEL_NOT_LOADED:'🔴' };
+    const subs  = {
+      QUARANTINE: 'High spam probability. Email moved to Quarantine.',
+      DELIVER:    'Low spam probability. Email appears safe.',
+      UNCERTAIN:  'Uncertain. Manual review recommended.',
+      MODEL_NOT_LOADED: 'Run python -m app.ml.train first.'
+    };
+    document.getElementById('verdict-icon').textContent   = icons[data.action] || '?';
+    document.getElementById('verdict-action').textContent = data.action;
+    document.getElementById('verdict-action').className   = 'verdict-action ' + data.action;
+    document.getElementById('verdict-sub').textContent    = subs[data.action] || '';
+
+    /* Email ID chip */
+    document.getElementById('email-id-label').textContent = data.email_id.slice(0, 18) + '…';
+
+    /* Explanation */
+    document.getElementById('explanation').textContent = data.explanation;
+
+    /* Feature pills */
+    const pillsEl = document.getElementById('feature-pills');
+    if (data.features && data.features.length) {
+      pillsEl.innerHTML = data.features.map(f =>
+        `<span class="pill risk">${f.replaceAll('_',' ')}</span>`
+      ).join('');
+    } else {
+      pillsEl.innerHTML = '<span class="pill ok">✓ No notable signals</span>';
+    }
+
+    /* Indicators table */
+    const tbody = document.getElementById('indicator-rows');
+    tbody.innerHTML = '';
+    for (const [k, v] of Object.entries(data.indicators || {})) {
+      if (SKIP_KEYS.has(k)) continue;
+      const isRisk = RISK_KEYS.has(k) && (v === true || (typeof v === 'number' && v > 0));
+      tbody.innerHTML += `
+        <tr>
+          <td>${k.replaceAll('_',' ')}</td>
+          <td style="font-family:monospace;">${JSON.stringify(v)}</td>
+          <td class="${isRisk ? 'badge-risk' : 'badge-ok'}">${isRisk ? '⚠ risk' : '✓ ok'}</td>
+        </tr>`;
+    }
+
+    /* Metadata grid */
+    const meta = document.getElementById('meta-grid');
+    meta.innerHTML = [
+      ['Email ID', data.email_id],
+      ['Model',    data.model_version],
+    ].map(([label, val]) => `
+      <div class="meta-item">
+        <label>${label}</label>
+        <span>${val || '—'}</span>
+      </div>`).join('');
+
+    rs.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.getElementById('feedback-msg').textContent = '';
+  }
+
+  function copyEmailId() {
+    if (!_emailId) return;
+    navigator.clipboard.writeText(_emailId).then(() => {
+      const chip = document.getElementById('email-id-chip');
+      chip.textContent = '✓ Copied!';
+      setTimeout(() => {
+        chip.innerHTML = '🔑 <span id="email-id-label">' + _emailId.slice(0,18) + '…</span>';
+        chip.onclick = copyEmailId;
+      }, 1500);
+    });
+  }
+
+  /* ─── Feedback ───────────────────────────────── */
+  async function submitFeedback() {
+    if (!_emailId) { alert('Triage an email first.'); return; }
+    const label  = document.getElementById('corrected-label').value;
+    const reason = document.getElementById('reason-input').value;
+    const res = await fetch('/feedback', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ email_id: _emailId, corrected_label: label, reason })
+    });
+    const data = await res.json();
+    const msg = document.getElementById('feedback-msg');
+    msg.textContent = '✓ ' + (data.status || 'Feedback submitted');
+    msg.style.color = 'var(--emerald)';
+  }
+
+  /* ─── Audit Log ──────────────────────────────── */
+  async function loadAudit() {
+    const btn = document.getElementById('btn-refresh');
+    const icon = document.getElementById('refresh-icon');
+    icon.style.animation = 'spin 0.5s linear infinite';
+    btn.disabled = true;
+
+    try {
+      const res = await fetch('/audit?limit=100');
+      const records = await res.json();
+
+      const tbody = document.getElementById('audit-tbody');
+      const empty = document.getElementById('audit-empty');
+
+      if (!records.length) {
+        tbody.innerHTML = '';
+        empty.style.display = 'block';
+        document.getElementById('audit-count').textContent = 'No records';
+        return;
+      }
+
+      empty.style.display = 'none';
+      document.getElementById('audit-count').textContent = records.length + ' records';
+
+      tbody.innerHTML = records.map((r, i) => {
+        const pct = Math.round(r.spam_probability * 100);
+        const fillColor = pct >= 90 ? 'var(--rose)' : pct <= 10 ? 'var(--emerald)' : 'var(--amber)';
+        const dt = new Date(r.timestamp).toLocaleString();
+        const inds = r.indicators ? JSON.stringify(r.indicators, null, 2) : '{}';
+        return `
+        <tr onclick="toggleAuditExpand(${i})">
+          <td class="text-muted" style="white-space:nowrap;">${dt}</td>
+          <td class="truncate">${r.sender || '—'}</td>
+          <td class="truncate">${r.subject || '—'}</td>
+          <td><span class="action-badge ${r.action}">${r.action}</span></td>
+          <td>
+            <span style="font-size:12px; font-weight:600;">${pct}%</span>
+            <div class="mini-bar"><div class="mini-fill" style="width:${pct}%; background:${fillColor};"></div></div>
+          </td>
+          <td class="text-muted" style="font-family:monospace; font-size:11px;">${r.model_version}</td>
+        </tr>
+        <tr class="audit-expand" id="ae-${i}">
+          <td colspan="6">
+            <div class="audit-expand-inner">
+              <div class="ae-block"><label>Explanation</label><span>${r.explanation || '—'}</span></div>
+              <div class="ae-block"><label>Email ID</label><span style="font-family:monospace; font-size:11px;">${r.email_id}</span></div>
+              <div class="ae-block"><label>Indicators</label><span style="font-family:monospace; font-size:11px;">${JSON.stringify(r.indicators||{})}</span></div>
+            </div>
+          </td>
+        </tr>`;
+      }).join('');
+    } catch(e) {
+      document.getElementById('audit-count').textContent = 'Error loading records';
+    } finally {
+      icon.style.animation = '';
+      btn.disabled = false;
+    }
+  }
+
+  function toggleAuditExpand(i) {
+    const row = document.getElementById('ae-' + i);
+    if (!row) return;
+    row.classList.toggle('open');
+  }
+
+  /* ─── Health ─────────────────────────────────── */
+  async function loadHealth() {
+    try {
+      const res  = await fetch('/health');
+      const data = await res.json();
+
+      const modelOk = data.model_loaded;
+      const dbOk    = data.db === 'ok';
+
+      document.getElementById('hc-status').innerHTML =
+        `<span class="status-dot ok"></span> ${data.status?.toUpperCase() || 'OK'}`;
+
+      document.getElementById('hc-model').innerHTML =
+        `<span class="status-dot ${modelOk ? 'ok' : 'err'}"></span> ${modelOk ? 'Loaded' : 'Not Loaded'}`;
+      document.getElementById('hc-model-ver').textContent = data.model_version || 'no model found';
+
+      document.getElementById('hc-db').innerHTML =
+        `<span class="status-dot ${dbOk ? 'ok' : 'err'}"></span> ${dbOk ? 'Connected' : 'Error'}`;
+
+      document.getElementById('health-raw').textContent = JSON.stringify(data, null, 2);
+      document.getElementById('last-poll').textContent  = new Date().toLocaleTimeString();
+    } catch(e) {
+      document.getElementById('health-raw').textContent = 'Error fetching health: ' + e.message;
+    }
+  }
+
+  function startHealthPoll() {
+    stopHealthPoll();
+    _healthTimer = setInterval(loadHealth, 30000);
+  }
+  function stopHealthPoll() {
+    if (_healthTimer) { clearInterval(_healthTimer); _healthTimer = null; }
+  }
+
+  /* ─── Sidebar stats ──────────────────────────── */
+  async function loadStats() {
+    try {
+      const res  = await fetch('/audit/stats');
+      const data = await res.json();
+      document.getElementById('stat-q').textContent = data.quarantine ?? 0;
+      document.getElementById('stat-d').textContent = data.deliver    ?? 0;
+      document.getElementById('stat-u').textContent = data.uncertain  ?? 0;
+    } catch(_) {}
+  }
+
+  /* ─── Init ───────────────────────────────────── */
+  loadStats();
+</script>
 </body>
-
 </html>

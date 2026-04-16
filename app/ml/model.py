@@ -9,7 +9,8 @@ from typing import Optional, Dict, Any
 
 logger = logging.getLogger("ml.model")
 
-MODEL_REGISTRY = os.getenv("MODEL_REGISTRY", "model_registry")
+_HERE = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+MODEL_REGISTRY = os.getenv("MODEL_REGISTRY", os.path.join(_HERE, "model_registry"))
 
 
 class SpamClassifier:

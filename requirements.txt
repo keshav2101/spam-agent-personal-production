@@ -12,4 +12,4 @@ joblib
 jinja2
 python-multipart
 publicsuffix2
-psycopg2-binary
+# psycopg2-binary  ← add back if using PostgreSQL
